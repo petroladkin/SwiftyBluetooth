@@ -52,6 +52,22 @@ final class CentralProxy: NSObject {
         #endif
     }
     
+    init(stateRestoreIdentifier: String?, queue: DispatchQueue) {
+        super.init()
+
+#if os(OSX)
+        //MARK: in macOS, the CBCentralManagerOptionRestoreIdentifierKey don't exist
+        //TODO: in macOS 10.13 CBCentralManagerOptionRestoreIdentifierKey will be add
+        self.centralManager = CBCentralManager(delegate: self, queue: queue, options: nil)
+#else
+        if let restoreIdentifier = stateRestoreIdentifier {
+            self.centralManager = CBCentralManager(delegate: self, queue: queue, options: [CBCentralManagerOptionRestoreIdentifierKey: restoreIdentifier])
+        } else {
+            self.centralManager = CBCentralManager(delegate: self, queue: queue)
+        }
+#endif
+    }
+    
     fileprivate func postCentralEvent(_ event: NSNotification.Name, userInfo: [AnyHashable: Any]? = nil) {
         NotificationCenter.default.post(
             name: event,

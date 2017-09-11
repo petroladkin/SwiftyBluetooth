@@ -33,6 +33,16 @@ public func setSharedCentralInstanceWith(restoreIdentifier: String) -> Central {
     return Central.setSharedInstanceWith(restoreIdentifier: restoreIdentifier)
 }
 
+/// Allows you to initially set the Central sharedInstance and use the restore
+/// identifier string of your choice for state preservation between app
+/// launches or setup custom running queue. Must be called before anything else
+/// from the library and can only be called once.
+@discardableResult
+public func setSharedCentralInstanceWith(restoreIdentifier: String? = nil, queue: DispatchQueue) -> Central {
+    return Central.setSharedInstanceWith(restoreIdentifier: restoreIdentifier, queue: queue)
+}
+
+
 /// Scans for Peripherals through a CBCentralManager scanForPeripheralsWithServices(...) function call.
 ///
 /// - Parameter timeout: The scanning time in seconds before the scan is stopped and the completion closure is called with a scanStopped result.
