@@ -91,6 +91,10 @@ extension PeripheralProxy {
     func disconnect(_ completion: @escaping DisconnectPeripheralCallback) {
         Central.sharedInstance.disconnect(peripheral: self.cbPeripheral, completion: completion)
     }
+    
+    var centralQueue: DispatchQueue {
+        return Central.sharedInstance.centralQueue
+    }
 }
 
 // MARK: RSSI Requests
@@ -126,30 +130,17 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.readRSSI()
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onReadRSSIOperationTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onReadRSSIOperationTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: ReadRSSIRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                self.readRSSIRequests.removeFirst()
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .readRSSI)))
+
+                self.runRSSIRequest()
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<ReadRSSIRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        self.readRSSIRequests.removeFirst()
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .readRSSI)))
-        
-        self.runRSSIRequest()
     }
 }
 
@@ -206,33 +197,17 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.discoverServices(request.serviceUUIDs)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onServiceRequestTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onServiceRequestTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: ServiceRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                self.serviceRequests.removeFirst()
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .discoverServices)))
+
+                self.runServiceRequest()
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<ServiceRequest>
-        
-        // If the original rssi read operation callback is still there, this should mean the operation went
-        // through and this timer can be ignored
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        self.serviceRequests.removeFirst()
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .discoverServices)))
-        
-        self.runServiceRequest()
     }
 }
 
@@ -284,33 +259,17 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.discoverIncludedServices(request.serviceUUIDs, for: request.parentService)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onIncludedServicesRequestTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onIncludedServicesRequestTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: IncludedServicesRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                self.includedServicesRequests.removeFirst()
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .discoverIncludedServices)))
+
+                self.runIncludedServicesRequest()
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<IncludedServicesRequest>
-        
-        // If the original discover included services callback is still there, this means the operation went
-        // through and this timer can be ignored
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        self.includedServicesRequests.removeFirst()
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .discoverIncludedServices)))
-        
-        self.runIncludedServicesRequest()
     }
 }
 
@@ -382,33 +341,17 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.discoverCharacteristics(request.characteristicUUIDs, for: request.service)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onCharacteristicRequestTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onCharacteristicRequestTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: CharacteristicRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                self.characteristicRequests.removeFirst()
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .discoverCharacteristics)))
+
+                self.runCharacteristicRequest()
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<CharacteristicRequest>
-        
-        // If the original rssi read operation callback is still there, this should mean the operation went
-        // through and this timer can be ignored
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        self.characteristicRequests.removeFirst()
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .discoverCharacteristics)))
-        
-        self.runCharacteristicRequest()
     }
 }
 
@@ -459,31 +402,17 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.discoverDescriptors(for: request.characteristic)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onDescriptorRequestTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onDescriptorRequestTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: DescriptorRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                self.descriptorRequests.removeFirst()
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .discoverDescriptors)))
+
+                self.runDescriptorRequest()
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<DescriptorRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        self.descriptorRequests.removeFirst()
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .discoverDescriptors)))
-        
-        self.runDescriptorRequest()
     }
 }
 
@@ -542,36 +471,22 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.readValue(for: request.characteristic)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onReadCharacteristicTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onReadCharacteristicTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: ReadCharacteristicRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                let readPath = request.characteristic.uuidPath
+
+                self.readCharacteristicRequests[readPath]?.removeFirst()
+                if self.readCharacteristicRequests[readPath]?.count == 0 {
+                    self.readCharacteristicRequests[readPath] = nil
+                }
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .readCharacteristic)))
+
+                self.runReadCharacteristicRequest(readPath)
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<ReadCharacteristicRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let readPath = request.characteristic.uuidPath
-        
-        self.readCharacteristicRequests[readPath]?.removeFirst()
-        if self.readCharacteristicRequests[readPath]?.count == 0 {
-            self.readCharacteristicRequests[readPath] = nil
-        }
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .readCharacteristic)))
-        
-        self.runReadCharacteristicRequest(readPath)
     }
 }
 
@@ -632,36 +547,22 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.readValue(for: request.descriptor)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onReadDescriptorTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onReadDescriptorTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: ReadDescriptorRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                let readPath = request.descriptor.uuidPath
+
+                self.readDescriptorRequests[readPath]?.removeFirst()
+                if self.readDescriptorRequests[readPath]?.count == 0 {
+                    self.readDescriptorRequests[readPath] = nil
+                }
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .readDescriptor)))
+
+                self.runReadDescriptorRequest(readPath)
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<ReadDescriptorRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let readPath = request.descriptor.uuidPath
-        
-        self.readDescriptorRequests[readPath]?.removeFirst()
-        if self.readDescriptorRequests[readPath]?.count == 0 {
-            self.readDescriptorRequests[readPath] = nil
-        }
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .readDescriptor)))
-        
-        self.runReadDescriptorRequest(readPath)
     }
 }
 
@@ -729,12 +630,21 @@ extension PeripheralProxy {
         self.cbPeripheral.writeValue(request.value, for: request.characteristic, type: request.type)
         
         if request.type == CBCharacteristicWriteType.withResponse {
-            Timer.scheduledTimer(
-                timeInterval: PeripheralProxy.defaultTimeoutInS,
-                target: self,
-                selector: #selector(self.onWriteCharacteristicValueRequestTimerTick),
-                userInfo: Weak(value: request),
-                repeats: false)
+            weak var weakRequest: WriteCharacteristicValueRequest? = request
+            self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+                if let request = weakRequest {
+                    let writePath = request.characteristic.uuidPath
+
+                    self.writeCharacteristicValueRequests[writePath]?.removeFirst()
+                    if self.writeCharacteristicValueRequests[writePath]?.count == 0 {
+                        self.writeCharacteristicValueRequests[writePath] = nil
+                    }
+
+                    request.callback(.failure(SBError.operationTimedOut(operation: .writeCharacteristic)))
+
+                    self.runWriteCharacteristicValueRequest(writePath)
+                }
+            }
         } else {
             // If no response is expected, we execute the callback and clear the request right away
             self.writeCharacteristicValueRequests[writePath]?.removeFirst()
@@ -747,29 +657,6 @@ extension PeripheralProxy {
             self.runWriteCharacteristicValueRequest(writePath)
         }
         
-    }
-    
-    @objc fileprivate func onWriteCharacteristicValueRequestTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
-        }
-        
-        let weakRequest = timer.userInfo as! Weak<WriteCharacteristicValueRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let writePath = request.characteristic.uuidPath
-        
-        self.writeCharacteristicValueRequests[writePath]?.removeFirst()
-        if self.writeCharacteristicValueRequests[writePath]?.count == 0 {
-            self.writeCharacteristicValueRequests[writePath] = nil
-        }
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .writeCharacteristic)))
-        
-        self.runWriteCharacteristicValueRequest(writePath)
     }
 }
 
@@ -833,36 +720,22 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.writeValue(request.value, for: request.descriptor)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onWriteDescriptorValueRequestTimerTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onWriteDescriptorValueRequestTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: WriteDescriptorValueRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                let writePath = request.descriptor.uuidPath
+
+                self.writeDescriptorValueRequests[writePath]?.removeFirst()
+                if self.writeDescriptorValueRequests[writePath]?.count == 0 {
+                    self.writeDescriptorValueRequests[writePath] = nil
+                }
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .writeDescriptor)))
+
+                self.runWriteDescriptorValueRequest(writePath)
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<WriteDescriptorValueRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let writePath = request.descriptor.uuidPath
-        
-        self.writeDescriptorValueRequests[writePath]?.removeFirst()
-        if self.writeDescriptorValueRequests[writePath]?.count == 0 {
-            self.writeDescriptorValueRequests[writePath] = nil
-        }
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .writeDescriptor)))
-        
-        self.runWriteDescriptorValueRequest(writePath)
     }
 }
 
@@ -920,36 +793,22 @@ extension PeripheralProxy {
         }
         
         self.cbPeripheral.setNotifyValue(request.enabled, for: request.characteristic)
-        
-        Timer.scheduledTimer(
-            timeInterval: PeripheralProxy.defaultTimeoutInS,
-            target: self,
-            selector: #selector(self.onUpdateNotificationStateRequestTick),
-            userInfo: Weak(value: request),
-            repeats: false)
-    }
-    
-    @objc fileprivate func onUpdateNotificationStateRequestTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
+
+        weak var weakRequest: UpdateNotificationStateRequest? = request
+        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            if let request = weakRequest {
+                let path = request.characteristic.uuidPath
+
+                self.updateNotificationStateRequests[path]?.removeFirst()
+                if self.updateNotificationStateRequests[path]?.count == 0 {
+                    self.updateNotificationStateRequests[path] = nil
+                }
+
+                request.callback(.failure(SBError.operationTimedOut(operation: .updateNotificationStatus)))
+
+                self.runUpdateNotificationStateRequest(path)
+            }
         }
-        
-        let weakRequest = timer.userInfo as! Weak<UpdateNotificationStateRequest>
-        
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let path = request.characteristic.uuidPath
-        
-        self.updateNotificationStateRequests[path]?.removeFirst()
-        if self.updateNotificationStateRequests[path]?.count == 0 {
-            self.updateNotificationStateRequests[path] = nil
-        }
-        
-        request.callback(.failure(SBError.operationTimedOut(operation: .updateNotificationStatus)))
-        
-        self.runUpdateNotificationStateRequest(path)
     }
 }
 

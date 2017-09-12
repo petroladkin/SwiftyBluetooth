@@ -146,6 +146,10 @@ extension Central {
                     completion: @escaping DisconnectPeripheralCallback) {
         centralProxy.disconnect(peripheral: peripheral, timeout: timeout, completion)
     }
+    
+    var centralQueue: DispatchQueue {
+        return centralProxy.centralQueue
+    }
 }
 
 // MARK: Public

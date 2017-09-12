@@ -33,6 +33,8 @@ final class CentralProxy: NSObject {
     fileprivate lazy var peripherals = NSMapTable<NSString, Peripheral>.strongToWeakObjects()
     
     var centralManager: CBCentralManager!
+
+    fileprivate(set) var centralQueue: DispatchQueue! = DispatchQueue.main
     
     override init() {
         super.init()
@@ -55,6 +57,7 @@ final class CentralProxy: NSObject {
     init(stateRestoreIdentifier: String?, queue: DispatchQueue) {
         super.init()
 
+        self.centralQueue = queue
 #if os(OSX)
         //MARK: in macOS, the CBCentralManagerOptionRestoreIdentifierKey don't exist
         //TODO: in macOS 10.13 CBCentralManagerOptionRestoreIdentifierKey will be add
@@ -145,13 +148,13 @@ extension CentralProxy {
                 
                 scanRequest.callback(.scanStarted)
                 self.centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
-                
-                Timer.scheduledTimer(
-                    timeInterval: timeout,
-                    target: self,
-                    selector: #selector(self.onScanTimerTick),
-                    userInfo: Weak(value: scanRequest),
-                    repeats: false)
+
+                weak var weakRequest: PeripheralScanRequest? = self.scanRequest
+                self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
+                    if let scanRequest = weakRequest {
+                        self.stopScan()
+                    }
+                }
             }
         }
     }
@@ -161,19 +164,6 @@ extension CentralProxy {
         if let scanRequest = self.scanRequest {
             self.scanRequest = nil
             scanRequest.callback(.scanStopped(error: error))
-        }
-    }
-    
-    @objc fileprivate func onScanTimerTick(_ timer: Timer) {
-        
-        defer {
-            if timer.isValid { timer.invalidate() }
-        }
-        
-        let weakRequest = timer.userInfo as! Weak<PeripheralScanRequest>
-        
-        if weakRequest.value != nil {
-            self.stopScan()
         }
     }
 }
@@ -226,33 +216,21 @@ extension CentralProxy {
                 self.connectRequests[uuid] = request
                 
                 self.centralManager.connect(peripheral, options: nil)
-                Timer.scheduledTimer(
-                    timeInterval: timeout,
-                    target: self,
-                    selector: #selector(self.onConnectTimerTick),
-                    userInfo: Weak(value: request),
-                    repeats: false)
+
+                weak var weakRequest: ConnectPeripheralRequest? = request
+                self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
+                    if let connectRequest = weakRequest {
+                        let uuid = connectRequest.peripheral.identifier
+
+                        self.connectRequests[uuid] = nil
+
+                        self.centralManager.cancelPeripheralConnection(connectRequest.peripheral)
+
+                        connectRequest.invokeCallbacks(error: SBError.operationTimedOut(operation: .connectPeripheral))
+                    }
+                }
             }
         }
-    }
-    
-    @objc fileprivate func onConnectTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
-        }
-        
-        let weakRequest = timer.userInfo as! Weak<ConnectPeripheralRequest>
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let uuid = request.peripheral.identifier
-        
-        self.connectRequests[uuid] = nil
-        
-        self.centralManager.cancelPeripheralConnection(request.peripheral)
-        
-        request.invokeCallbacks(error: SBError.operationTimedOut(operation: .connectPeripheral))
     }
 }
 
@@ -316,31 +294,19 @@ extension CentralProxy {
                 self.disconnectRequests[uuid] = request
                 
                 self.centralManager.cancelPeripheralConnection(peripheral)
-                Timer.scheduledTimer(
-                    timeInterval: timeout,
-                    target: self,
-                    selector: #selector(self.onDisconnectTimerTick),
-                    userInfo: Weak(value: request),
-                    repeats: false)
+
+                weak var weakRequest: DisconnectPeripheralRequest? = request
+                self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
+                    if let disconnectRequest = weakRequest {
+                        let uuid = disconnectRequest.peripheral.identifier
+
+                        self.connectRequests[uuid] = nil
+
+                        disconnectRequest.invokeCallbacks(error: SBError.operationTimedOut(operation: .disconnectPeripheral))
+                    }
+                }
             }
         }
-    }
-    
-    @objc fileprivate func onDisconnectTimerTick(_ timer: Timer) {
-        defer {
-            if timer.isValid { timer.invalidate() }
-        }
-        
-        let weakRequest = timer.userInfo as! Weak<DisconnectPeripheralRequest>
-        guard let request = weakRequest.value else {
-            return
-        }
-        
-        let uuid = request.peripheral.identifier
-        
-        self.disconnectRequests[uuid] = nil
-        
-        request.invokeCallbacks(error: SBError.operationTimedOut(operation: .disconnectPeripheral))
     }
 }
 
