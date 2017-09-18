@@ -60,9 +60,12 @@ final class PeripheralProxy: NSObject  {
                 self?.valid = false
             }
         }
+
+        self.cbPeripheral.addObserver(self, forKeyPath: "state", options: [.new, .old], context: nil)
     }
     
     deinit {
+        self.cbPeripheral.removeObserver(self, forKeyPath: "state")
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -75,6 +78,30 @@ final class PeripheralProxy: NSObject  {
             name: event,
             object: peripheral,
             userInfo: userInfo)
+    }
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == "state" {
+            guard let peripheral = self.peripheral else {
+                return
+            }
+            
+            guard let newState = change?[NSKeyValueChangeKey.newKey] as? NSNumber else {
+                return
+            }
+
+            guard let oldState = change?[NSKeyValueChangeKey.oldKey] as? NSNumber else {
+                return
+            }
+            
+            NotificationCenter.default.post(
+                    name: Peripheral.PeripheralStateUpdate,
+                    object: peripheral,
+                    userInfo: [
+                        "newState": CBPeripheralState(rawValue: newState.intValue),
+                        "oldState": CBPeripheralState(rawValue: oldState.intValue)
+                ])
+        }
     }
 }
 
