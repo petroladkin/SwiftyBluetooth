@@ -352,7 +352,17 @@ extension CentralProxy: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        let uuid = peripheral.identifier
+        let cbPeripheral = peripheral
+        let uuid = cbPeripheral.identifier
+
+        let key = NSString(string: cbPeripheral.identifier.uuidString)
+        if let peripheral = self.peripherals.object(forKey: key) {
+            NotificationCenter.default.post(
+                    name: Peripheral.PeripheralDisconnect,
+                    object: peripheral,
+                    userInfo: error == nil ? nil : ["error": error])
+        }
+        
         guard let request = disconnectRequests[uuid] else {
             return
         }
