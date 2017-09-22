@@ -170,7 +170,7 @@ extension CentralProxy {
 
                 weak var weakRequest: PeripheralScanRequest? = self.scanRequest
                 self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
-                    if let scanRequest = weakRequest {
+                    if let _ = weakRequest {
                         self.stopScan()
                     }
                 }
