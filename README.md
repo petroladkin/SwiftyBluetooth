@@ -177,6 +177,12 @@ NotificationCenter.default.addObserver(forName: Central.CentralManagerWillRestor
     }
 }
 ```
+### Execute CoreBluetooth on custom DispatchQueue
+Default SwiftyBluetooth execute on DispatchQueue.main queue but if you need to using custom DispatchQueue then use 'SwiftyBluetooth.setSharedCentralInstanceWith(...)' function
+```swift
+SwiftyBluetooth.setSharedCentralInstanceWith(queue: DispatchQueue(label: "custom_queue_name"))
+```
+
 ## Installation
 
 
