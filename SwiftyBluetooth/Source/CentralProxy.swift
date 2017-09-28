@@ -173,9 +173,9 @@ extension CentralProxy {
                 }
                 
                 weak var weakRequest: PeripheralScanRequest? = self.scanRequest
-                self.centralQueue.asyncAfter(deadline: .now() + timeout) {
-                    if let _ = weakRequest {
-                        self.stopScan()
+                self.centralQueue.asyncAfter(deadline: .now() + timeout) { [weak self] in
+                    if let _ = weakRequest, let this = self {
+                        this.stopScan()
                     }
                 }
             }
@@ -241,13 +241,13 @@ extension CentralProxy {
                 self.centralManager.connect(peripheral, options: nil)
 
                 weak var weakRequest: ConnectPeripheralRequest? = request
-                self.centralQueue.asyncAfter(deadline: .now() + timeout) {
-                    if let connectRequest = weakRequest {
+                self.centralQueue.asyncAfter(deadline: .now() + timeout) { [weak self] in
+                    if let connectRequest = weakRequest, let this = self {
                         let uuid = connectRequest.peripheral.uuidIdentifier
 
-                        self.connectRequests[uuid] = nil
+                        this.connectRequests[uuid] = nil
 
-                        self.centralManager.cancelPeripheralConnection(connectRequest.peripheral)
+                        this.centralManager.cancelPeripheralConnection(connectRequest.peripheral)
 
                         connectRequest.invokeCallbacks(error: SBError.operationTimedOut(operation: .connectPeripheral))
                     }
@@ -334,11 +334,11 @@ extension CentralProxy {
                 self.centralManager.cancelPeripheralConnection(peripheral)
 
                 weak var weakRequest: DisconnectPeripheralRequest? = request
-                self.centralQueue.asyncAfter(deadline: .now() + timeout) {
-                    if let disconnectRequest = weakRequest {
+                self.centralQueue.asyncAfter(deadline: .now() + timeout) { [weak self] in
+                    if let disconnectRequest = weakRequest, let this = self {
                         let uuid = disconnectRequest.peripheral.uuidIdentifier
 
-                        self.connectRequests[uuid] = nil
+                        this.connectRequests[uuid] = nil
 
                         disconnectRequest.invokeCallbacks(error: SBError.operationTimedOut(operation: .disconnectPeripheral))
                     }
