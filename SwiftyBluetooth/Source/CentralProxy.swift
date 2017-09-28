@@ -169,7 +169,7 @@ extension CentralProxy {
                 self.centralManager.scanForPeripherals(withServices: serviceUUIDs, options: options)
 
                 weak var weakRequest: PeripheralScanRequest? = self.scanRequest
-                self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
+                self.centralQueue.asyncAfter(deadline: .now() + timeout) {
                     if let _ = weakRequest {
                         self.stopScan()
                     }
@@ -237,7 +237,7 @@ extension CentralProxy {
                 self.centralManager.connect(peripheral, options: nil)
 
                 weak var weakRequest: ConnectPeripheralRequest? = request
-                self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
+                self.centralQueue.asyncAfter(deadline: .now() + timeout) {
                     if let connectRequest = weakRequest {
                         let uuid = connectRequest.peripheral.uuidIdentifier
 
@@ -330,7 +330,7 @@ extension CentralProxy {
                 self.centralManager.cancelPeripheralConnection(peripheral)
 
                 weak var weakRequest: DisconnectPeripheralRequest? = request
-                self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(timeout * 1000))) {
+                self.centralQueue.asyncAfter(deadline: .now() + timeout) {
                     if let disconnectRequest = weakRequest {
                         let uuid = disconnectRequest.peripheral.uuidIdentifier
 
