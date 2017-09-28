@@ -132,7 +132,7 @@ extension PeripheralProxy {
         self.cbPeripheral.readRSSI()
 
         weak var weakRequest: ReadRSSIRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 self.readRSSIRequests.removeFirst()
 
@@ -199,7 +199,7 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverServices(request.serviceUUIDs)
 
         weak var weakRequest: ServiceRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 self.serviceRequests.removeFirst()
 
@@ -261,7 +261,7 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverIncludedServices(request.serviceUUIDs, for: request.parentService)
 
         weak var weakRequest: IncludedServicesRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 self.includedServicesRequests.removeFirst()
 
@@ -343,7 +343,7 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverCharacteristics(request.characteristicUUIDs, for: request.service)
 
         weak var weakRequest: CharacteristicRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 self.characteristicRequests.removeFirst()
 
@@ -404,7 +404,7 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverDescriptors(for: request.characteristic)
 
         weak var weakRequest: DescriptorRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 self.descriptorRequests.removeFirst()
 
@@ -473,7 +473,7 @@ extension PeripheralProxy {
         self.cbPeripheral.readValue(for: request.characteristic)
 
         weak var weakRequest: ReadCharacteristicRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 let readPath = request.characteristic.uuidPath
 
@@ -549,7 +549,7 @@ extension PeripheralProxy {
         self.cbPeripheral.readValue(for: request.descriptor)
 
         weak var weakRequest: ReadDescriptorRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 let readPath = request.descriptor.uuidPath
 
@@ -631,7 +631,7 @@ extension PeripheralProxy {
         
         if request.type == CBCharacteristicWriteType.withResponse {
             weak var weakRequest: WriteCharacteristicValueRequest? = request
-            self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+            self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
                 if let request = weakRequest {
                     let writePath = request.characteristic.uuidPath
 
@@ -722,7 +722,7 @@ extension PeripheralProxy {
         self.cbPeripheral.writeValue(request.value, for: request.descriptor)
 
         weak var weakRequest: WriteDescriptorValueRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 let writePath = request.descriptor.uuidPath
 
@@ -795,7 +795,7 @@ extension PeripheralProxy {
         self.cbPeripheral.setNotifyValue(request.enabled, for: request.characteristic)
 
         weak var weakRequest: UpdateNotificationStateRequest? = request
-        self.centralQueue.asyncAfter(deadline: DispatchTime.now() + DispatchTimeInterval.milliseconds(Int(PeripheralProxy.defaultTimeoutInS * 1000))) {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
             if let request = weakRequest {
                 let path = request.characteristic.uuidPath
 
