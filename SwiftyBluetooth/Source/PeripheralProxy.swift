@@ -132,13 +132,13 @@ extension PeripheralProxy {
         self.cbPeripheral.readRSSI()
 
         weak var weakRequest: ReadRSSIRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
-                self.readRSSIRequests.removeFirst()
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
+                this.readRSSIRequests.removeFirst()
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .readRSSI)))
 
-                self.runRSSIRequest()
+                this.runRSSIRequest()
             }
         }
     }
@@ -199,13 +199,13 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverServices(request.serviceUUIDs)
 
         weak var weakRequest: ServiceRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
-                self.serviceRequests.removeFirst()
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
+                this.serviceRequests.removeFirst()
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .discoverServices)))
 
-                self.runServiceRequest()
+                this.runServiceRequest()
             }
         }
     }
@@ -261,13 +261,13 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverIncludedServices(request.serviceUUIDs, for: request.parentService)
 
         weak var weakRequest: IncludedServicesRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
-                self.includedServicesRequests.removeFirst()
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
+                this.includedServicesRequests.removeFirst()
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .discoverIncludedServices)))
 
-                self.runIncludedServicesRequest()
+                this.runIncludedServicesRequest()
             }
         }
     }
@@ -343,13 +343,13 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverCharacteristics(request.characteristicUUIDs, for: request.service)
 
         weak var weakRequest: CharacteristicRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
-                self.characteristicRequests.removeFirst()
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
+                this.characteristicRequests.removeFirst()
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .discoverCharacteristics)))
 
-                self.runCharacteristicRequest()
+                this.runCharacteristicRequest()
             }
         }
     }
@@ -404,13 +404,13 @@ extension PeripheralProxy {
         self.cbPeripheral.discoverDescriptors(for: request.characteristic)
 
         weak var weakRequest: DescriptorRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
-                self.descriptorRequests.removeFirst()
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
+                this.descriptorRequests.removeFirst()
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .discoverDescriptors)))
 
-                self.runDescriptorRequest()
+                this.runDescriptorRequest()
             }
         }
     }
@@ -473,18 +473,18 @@ extension PeripheralProxy {
         self.cbPeripheral.readValue(for: request.characteristic)
 
         weak var weakRequest: ReadCharacteristicRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
                 let readPath = request.characteristic.uuidPath
 
-                self.readCharacteristicRequests[readPath]?.removeFirst()
-                if self.readCharacteristicRequests[readPath]?.count == 0 {
-                    self.readCharacteristicRequests[readPath] = nil
+                this.readCharacteristicRequests[readPath]?.removeFirst()
+                if this.readCharacteristicRequests[readPath]?.count == 0 {
+                    this.readCharacteristicRequests[readPath] = nil
                 }
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .readCharacteristic)))
 
-                self.runReadCharacteristicRequest(readPath)
+                this.runReadCharacteristicRequest(readPath)
             }
         }
     }
@@ -549,18 +549,18 @@ extension PeripheralProxy {
         self.cbPeripheral.readValue(for: request.descriptor)
 
         weak var weakRequest: ReadDescriptorRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
                 let readPath = request.descriptor.uuidPath
 
-                self.readDescriptorRequests[readPath]?.removeFirst()
-                if self.readDescriptorRequests[readPath]?.count == 0 {
-                    self.readDescriptorRequests[readPath] = nil
+                this.readDescriptorRequests[readPath]?.removeFirst()
+                if this.readDescriptorRequests[readPath]?.count == 0 {
+                    this.readDescriptorRequests[readPath] = nil
                 }
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .readDescriptor)))
 
-                self.runReadDescriptorRequest(readPath)
+                this.runReadDescriptorRequest(readPath)
             }
         }
     }
@@ -631,18 +631,18 @@ extension PeripheralProxy {
         
         if request.type == CBCharacteristicWriteType.withResponse {
             weak var weakRequest: WriteCharacteristicValueRequest? = request
-            self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-                if let request = weakRequest {
+            self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+                if let request = weakRequest, let this = self {
                     let writePath = request.characteristic.uuidPath
 
-                    self.writeCharacteristicValueRequests[writePath]?.removeFirst()
-                    if self.writeCharacteristicValueRequests[writePath]?.count == 0 {
-                        self.writeCharacteristicValueRequests[writePath] = nil
+                    this.writeCharacteristicValueRequests[writePath]?.removeFirst()
+                    if this.writeCharacteristicValueRequests[writePath]?.count == 0 {
+                        this.writeCharacteristicValueRequests[writePath] = nil
                     }
 
                     request.callback(.failure(SBError.operationTimedOut(operation: .writeCharacteristic)))
 
-                    self.runWriteCharacteristicValueRequest(writePath)
+                    this.runWriteCharacteristicValueRequest(writePath)
                 }
             }
         } else {
@@ -722,18 +722,18 @@ extension PeripheralProxy {
         self.cbPeripheral.writeValue(request.value, for: request.descriptor)
 
         weak var weakRequest: WriteDescriptorValueRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
                 let writePath = request.descriptor.uuidPath
 
-                self.writeDescriptorValueRequests[writePath]?.removeFirst()
-                if self.writeDescriptorValueRequests[writePath]?.count == 0 {
-                    self.writeDescriptorValueRequests[writePath] = nil
+                this.writeDescriptorValueRequests[writePath]?.removeFirst()
+                if this.writeDescriptorValueRequests[writePath]?.count == 0 {
+                    this.writeDescriptorValueRequests[writePath] = nil
                 }
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .writeDescriptor)))
 
-                self.runWriteDescriptorValueRequest(writePath)
+                this.runWriteDescriptorValueRequest(writePath)
             }
         }
     }
@@ -795,18 +795,18 @@ extension PeripheralProxy {
         self.cbPeripheral.setNotifyValue(request.enabled, for: request.characteristic)
 
         weak var weakRequest: UpdateNotificationStateRequest? = request
-        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) {
-            if let request = weakRequest {
+        self.centralQueue.asyncAfter(deadline: .now() + PeripheralProxy.defaultTimeoutInS) { [weak self] in
+            if let request = weakRequest, let this = self {
                 let path = request.characteristic.uuidPath
 
-                self.updateNotificationStateRequests[path]?.removeFirst()
-                if self.updateNotificationStateRequests[path]?.count == 0 {
-                    self.updateNotificationStateRequests[path] = nil
+                this.updateNotificationStateRequests[path]?.removeFirst()
+                if this.updateNotificationStateRequests[path]?.count == 0 {
+                    this.updateNotificationStateRequests[path] = nil
                 }
 
                 request.callback(.failure(SBError.operationTimedOut(operation: .updateNotificationStatus)))
 
-                self.runUpdateNotificationStateRequest(path)
+                this.runUpdateNotificationStateRequest(path)
             }
         }
     }
