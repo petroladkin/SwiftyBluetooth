@@ -208,7 +208,7 @@ private final class ConnectPeripheralRequest {
             if let error = error {
                 return .failure(error)
             } else {
-                return .success()
+                return .success(())
             }
         }()
         for callback in callbacks {
@@ -228,7 +228,7 @@ extension CentralProxy {
             let uuid = peripheral.uuidIdentifier
             
             if let cbPeripheral = self.centralManager.retrievePeripherals(withIdentifiers: [uuid]).first , cbPeripheral.state == .connected {
-                callback(.success())
+                callback(.success(()))
                 return
             }
             
@@ -274,7 +274,7 @@ private final class DisconnectPeripheralRequest {
             if let error = error {
                 return .failure(error)
             } else {
-                return .success()
+                return .success(())
             }
         }()
         for callback in callbacks {
@@ -292,7 +292,17 @@ extension CentralProxy {
                 return
             }
             
+<<<<<<< HEAD
             let uuid = peripheral.uuidIdentifier
+=======
+            let uuid = peripheral.identifier
+            
+            if let cbPeripheral = self.centralManager.retrievePeripherals(withIdentifiers: [uuid]).first,
+                (cbPeripheral.state == .disconnected || cbPeripheral.state == .disconnecting) {
+                callback(.success(()))
+                return
+            }
+>>>>>>> 9168340c977c04df522f90f0d455f60768798616
             
             // MARK: in macOS before 10.13, the CBPeripheralState.disconnecting don't exist
             #if SB_XCODE9
@@ -441,7 +451,7 @@ extension CentralProxy: CBCentralManagerDelegate {
         }
         //
         
-        var rssiOptional: Int? = Int(RSSI)
+        var rssiOptional: Int? = Int(truncating: RSSI)
         if let rssi = rssiOptional, rssi == 127 {
             rssiOptional = nil
         }
