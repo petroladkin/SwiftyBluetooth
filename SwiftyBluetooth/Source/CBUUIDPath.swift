@@ -23,7 +23,7 @@
 
 import CoreBluetooth
 
-struct CBUUIDPath: Hashable {
+public struct CBUUIDPath: Hashable {
     let hash: Int
     
     init(uuids: CBUUID...) {
