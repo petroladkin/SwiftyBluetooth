@@ -36,11 +36,11 @@ public struct CBUUIDPath: Hashable {
         self.hash = stringPath.hashValue
     }
     
-    var hashValue : Int {
+    public var hashValue : Int {
         return self.hash
     }
 }
-func ==(lhs: CBUUIDPath, rhs: CBUUIDPath) -> Bool {
+public func ==(lhs: CBUUIDPath, rhs: CBUUIDPath) -> Bool {
     return lhs.hashValue == rhs.hashValue
 }
 
@@ -63,19 +63,19 @@ func descriptorPath(service: CBUUIDConvertible,
 }
 
 extension CBService {
-    var uuidPath: CBUUIDPath {
+    public var uuidPath: CBUUIDPath {
         return servicePath(service: self)
     }
 }
 
 extension CBCharacteristic {
-    var uuidPath: CBUUIDPath {
+    public var uuidPath: CBUUIDPath {
         return characteristicPath(service: self.service, characteristic: self)
     }
 }
 
 extension CBDescriptor {
-    var uuidPath: CBUUIDPath {
+    public var uuidPath: CBUUIDPath {
         return descriptorPath(service: self.characteristic.service, characteristic: self.characteristic, descriptor: self)
     }
 }
